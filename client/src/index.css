@@ -1,0 +1,268 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #7f1d1d;
+  --color-secondary: #dc2626;
+  --color-accent: #ef4444;
+  --color-background: #0a0a0a;
+  --color-surface: #1a1a1a;
+  --color-text: #f8fafc;
+  --color-text-muted: #94a3b8;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: 'Outfit', sans-serif;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0;
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 0.6;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+/* Loading Component Specific Animations */
+@keyframes loading-progress {
+  0% {
+    width: 0%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes loading-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes loading-float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 0.5;
+  }
+
+  90% {
+    opacity: 0;
+  }
+}
+
+/* Animation Classes */
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+.animate-progress {
+  animation: progress 8s linear forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+/* Loading Component Specific Animation Classes */
+.animate-loading-progress {
+  animation: loading-progress 3s ease-in-out;
+}
+
+.animate-loading-fade-in {
+  animation: loading-fade-in 0.5s ease-out;
+}
+
+.animate-loading-float {
+  animation: loading-float 3s ease-in-out infinite;
+}
+
+/* Reset styles for markdown */
+.reset-tw:not(pre):not(code) {
+  all: revert;
+}
+
+.reset-tw pre {
+  background: #1a1a1a !important;
+  padding: 1rem !important;
+  border-radius: 0.5rem !important;
+  border: 1px solid #374151 !important;
+  margin: 0.5rem 0 !important;
+  overflow-x: auto !important;
+}
+
+.reset-tw code {
+  background: #374151 !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875rem !important;
+  border: 1px solid #4b5563 !important;
+  color: #e5e7eb !important;
+}
+
+.reset-tw pre code {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #f8fafc !important;
+}
+
+.loader div:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loader div:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Prism.js theme adjustments */
+code[class*="language-"],
+pre[class*="language-"] {
+  background: #1a1a1a !important;
+  color: #f8fafc !important;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6a9955 !important;
+}
+
+.token.punctuation {
+  color: #d4d4d4 !important;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #b5cea8 !important;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #ce9178 !important;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #d4d4d4 !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #c586c0 !important;
+}
+
+.token.function,
+.token.class-name {
+  color: #dcdcaa !important;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #d16969 !important;
+}
+
+/* Enhanced glass morphism effects */
+.glass-effect {
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+}
+
+.glass-effect-light {
+  background: rgba(30, 30, 30, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.08);
+}
+
+/* Autofill styles for login form */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: white !important;
+  -webkit-box-shadow: 0 0 0px 1000px #3D0000 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
