@@ -4,15 +4,15 @@ import bcryptjs from "bcryptjs";
 
 // Generate JWT Token
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { 
-        expiresIn: '30d' 
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: '30d'
     });
 };
 
 // Send response utility
 const sendTokenResponse = (user, statusCode, res, message) => {
     const token = generateToken(user._id);
-    
+
     const userData = {
         id: user._id,
         name: user.name,
@@ -31,8 +31,8 @@ const sendTokenResponse = (user, statusCode, res, message) => {
 // Register User
 export const registerUser = async (req, res) => {
     try {
-        console.log('Registration attempt:', req.body);
-        
+        console.log('Registration attempt:', { name: req.body.name, email: req.body.email });
+
         const { name, email, password } = req.body;
 
         // Validation
@@ -118,7 +118,7 @@ export const loginUser = async (req, res) => {
 
         // Find user
         const user = await User.findOne({ email: email.toLowerCase().trim() });
-        
+
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -128,7 +128,7 @@ export const loginUser = async (req, res) => {
 
         // Check password using bcrypt directly (since we removed the method)
         const isPasswordValid = await bcryptjs.compare(password, user.password);
-        
+
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,
@@ -140,7 +140,7 @@ export const loginUser = async (req, res) => {
 
     } catch (error) {
         console.error('Login error:', error);
-        
+
         res.status(500).json({
             success: false,
             message: "Server error during login"
@@ -152,7 +152,7 @@ export const loginUser = async (req, res) => {
 export const getUser = async (req, res) => {
     try {
         const user = req.user;
-        
+
         res.status(200).json({
             success: true,
             message: "User data retrieved successfully",
@@ -167,7 +167,7 @@ export const getUser = async (req, res) => {
 
     } catch (error) {
         console.error('Get user error:', error);
-        
+
         res.status(500).json({
             success: false,
             message: "Server error while fetching user data"
@@ -186,8 +186,8 @@ export const updateUser = async (req, res) => {
         if (email) updateData.email = email.toLowerCase().trim();
 
         const updatedUser = await User.findByIdAndUpdate(
-            userId, 
-            updateData, 
+            userId,
+            updateData,
             { new: true, runValidators: true }
         ).select('-password');
 

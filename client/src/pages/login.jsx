@@ -18,16 +18,15 @@ const Login = () => {
         if (state === "login") {
             // Login logic
             await loginUser({
-                id: Date.now().toString(),
-                name: formData.email.split('@')[0],
-                email: formData.email
+                email: formData.email,
+                password: formData.password
             });
         } else {
             // Register logic
             await registerUser({
-                id: Date.now().toString(),
                 name: formData.name,
-                email: formData.email
+                email: formData.email,
+                password: formData.password
             });
         }
     }
