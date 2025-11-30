@@ -34,21 +34,21 @@ app.use(cors({
 
 app.use(express.json());
 
-// Log all incoming requests for debugging
-app.use((req, res, next) => {
-    console.log('🌐 Incoming Request:', {
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-        body: req.body
-    });
-    next();
-});
+// Log all incoming requests for debugging (Disabled for production/cleanliness)
+// app.use((req, res, next) => {
+//     console.log('🌐 Incoming Request:', {
+//         method: req.method,
+//         url: req.url,
+//         headers: req.headers,
+//         body: req.body
+//     });
+//     next();
+// });
 
 // Routes
 app.get('/', (req, res) => {
-    res.status(200).json({ 
-        success: true, 
+    res.status(200).json({
+        success: true,
         message: "YoumaX AI Server is running",
         timestamp: new Date().toISOString()
     });
@@ -79,9 +79,9 @@ app.use((error, req, res, next) => {
 const startServer = async () => {
     try {
         await connectDB();
-        
+
         const PORT = process.env.PORT || 3000;
-        
+
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
             console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

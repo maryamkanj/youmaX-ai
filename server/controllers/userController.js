@@ -31,7 +31,7 @@ const sendTokenResponse = (user, statusCode, res, message) => {
 // Register User
 export const registerUser = async (req, res) => {
     try {
-        console.log('Registration attempt:', { name: req.body.name, email: req.body.email });
+        // console.log('Registration attempt:', { name: req.body.name, email: req.body.email });
 
         const { name, email, password } = req.body;
 
@@ -70,7 +70,7 @@ export const registerUser = async (req, res) => {
             password: hashedPassword
         });
 
-        console.log('User created successfully:', user.email);
+        // console.log('User created successfully:', user.email);
         sendTokenResponse(user, 201, res, "User registered successfully");
 
     } catch (error) {
