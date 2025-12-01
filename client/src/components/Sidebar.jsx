@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
@@ -43,7 +43,7 @@ const Sidebar = () => {
             messages: chat.messages?.map(msg => ({
                 _id: msg._id,
                 content: msg.content,
-                isUser: msg.role === 'user',
+                isUser: msg.role === 'user' || msg.isUser,
                 role: msg.role,
                 timestamp: msg.timestamp,
                 isImage: msg.isImage || false
@@ -62,6 +62,36 @@ const Sidebar = () => {
             handleChatSelect(newChat);
         }
     };
+
+    // Get chat display name - improved version
+    const getChatDisplayName = (chat) => {
+        if (!chat) return 'New Chat';
+
+        // If chat already has a custom name, use it
+        if (chat.name && chat.name !== 'New Chat') {
+            return chat.name;
+        }
+
+        // Try to get name from first user message
+        if (chat.messages?.length > 0) {
+            const firstUserMessage = chat.messages.find(msg =>
+                msg.role === 'user' || msg.isUser === true
+            );
+            if (firstUserMessage?.content) {
+                const truncated = firstUserMessage.content.substring(0, 40);
+                return truncated + (firstUserMessage.content.length > 40 ? '...' : '');
+            }
+        }
+
+        return chat.name || 'New Chat';
+    };
+
+    // Filter chats based on search
+    const filteredChats = chats.filter((chat) => {
+        const chatName = getChatDisplayName(chat).toLowerCase();
+        const searchTerm = search.toLowerCase();
+        return chatName.includes(searchTerm);
+    });
 
     return (
         <>
@@ -144,61 +174,52 @@ const Sidebar = () => {
 
                 {/* Chat list - scrollable area with responsive design */}
                 <div className='flex-1 overflow-y-auto mt-3 text-sm space-y-2 pr-1'>
-                    {chats
-                        .filter((chat) =>
-                            chat.messages?.[0]
-                                ? chat.messages[0]?.content?.toLowerCase().includes(search.toLowerCase())
-                                : chat.name.toLowerCase().includes(search.toLowerCase())
-                        )
-                        .map((chat) => (
-                            <div
-                                key={chat._id}
-                                onClick={() => handleChatSelect(chat)}
-                                className={`p-3 px-4 border rounded-md cursor-pointer flex items-start justify-between gap-2 group transition-all duration-200 ${selectedChat?._id === chat._id
-                                    ? 'bg-[#950101]/50 border-[#FF0000]'
-                                    : 'bg-[#3D0000]/50 border-[#FF0000]/15 hover:bg-[#3D0000]/70'
-                                    }`}
-                            >
-                                {/* Chat content - takes most of the space, responsive truncation */}
-                                <div className='flex-1 min-w-0 overflow-hidden'>
-                                    <p className='truncate text-white font-medium text-sm md:text-base'>
-                                        {chat.messages?.length > 0 && chat.messages[0]?.content
-                                            ? chat.messages[0].content.slice(0, 40) + (chat.messages[0].content.length > 40 ? '...' : '')
-                                            : chat.name}
-                                    </p>
-                                    <p className='text-xs text-white/60 mt-1 truncate'>
-                                        {moment(chat.updatedAt).fromNow()}
-                                    </p>
-                                </div>
-
-                                {/* Delete button - shows on hover on desktop, always visible on mobile */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm('Delete this chat?')) {
-                                            deleteChat(chat._id);
-                                        }
-                                    }}
-                                    className='opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 max-md:opacity-60 transition-opacity duration-200 p-1.5 hover:bg-red-500/20 rounded-md flex-shrink-0'
-                                    aria-label='Delete chat'
-                                >
-                                    <svg
-                                        className="w-4 h-4 text-white/60 hover:text-red-500 transition-colors"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                        />
-                                    </svg>
-                                </button>
+                    {filteredChats.map((chat) => (
+                        <div
+                            key={chat._id}
+                            onClick={() => handleChatSelect(chat)}
+                            className={`p-3 px-4 border rounded-md cursor-pointer flex items-start justify-between gap-2 group transition-all duration-200 ${selectedChat?._id === chat._id
+                                ? 'bg-[#950101]/50 border-[#FF0000]'
+                                : 'bg-[#3D0000]/50 border-[#FF0000]/15 hover:bg-[#3D0000]/70'
+                                }`}
+                        >
+                            {/* Chat content - takes most of the space, responsive truncation */}
+                            <div className='flex-1 min-w-0 overflow-hidden'>
+                                <p className='truncate text-white font-medium text-sm md:text-base'>
+                                    {getChatDisplayName(chat)}
+                                </p>
+                                <p className='text-xs text-white/60 mt-1 truncate'>
+                                    {moment(chat.updatedAt).fromNow()}
+                                </p>
                             </div>
-                        ))
-                    }
+
+                            {/* Delete button - shows on hover on desktop, always visible on mobile */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm('Delete this chat?')) {
+                                        deleteChat(chat._id);
+                                    }
+                                }}
+                                className='opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 max-md:opacity-60 transition-opacity duration-200 p-1.5 hover:bg-red-500/20 rounded-md flex-shrink-0'
+                                aria-label='Delete chat'
+                            >
+                                <svg
+                                    className="w-4 h-4 text-white/60 hover:text-red-500 transition-colors"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Bottom Menu Items Group */}

@@ -3,9 +3,8 @@ import { useAppContext } from "../context/AppContext";
 import Message from "./Message";
 
 const Chatbox = () => {
-    const { selectedChat, addMessage, addNewChat, chats } = useAppContext();
+    const { selectedChat, addMessage, addNewChat, chats, isSendingMessage } = useAppContext();
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [prompt, setPrompt] = useState('');
     const [mode, setMode] = useState('text');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -14,18 +13,14 @@ const Chatbox = () => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
-        if (!prompt.trim() || loading) return;
+        if (!prompt.trim() || isSendingMessage) return;
 
-        setLoading(true);
+        const currentPrompt = prompt;
+        // Clear input immediately for better UX
+        setPrompt('');
 
-        try {
-            await addMessage(prompt, mode);
-            setPrompt('');
-        } catch (error) {
-            console.error("Failed to send message:", error);
-        } finally {
-            setLoading(false);
-        }
+        // Add message - this will handle everything
+        await addMessage(currentPrompt, mode);
     };
 
     useEffect(() => {
@@ -34,7 +29,7 @@ const Chatbox = () => {
             const transformedMessages = selectedChat.messages?.map(msg => ({
                 _id: msg._id,
                 content: msg.content,
-                isUser: msg.role === 'user',
+                isUser: msg.role === 'user' || msg.isUser,
                 role: msg.role,
                 timestamp: msg.timestamp,
                 isImage: msg.isImage || false
@@ -80,6 +75,7 @@ const Chatbox = () => {
 
     const selectedMode = modes.find(m => m.value === mode);
 
+    // Auto-scroll to bottom when messages change
     useEffect(() => {
         if (containerRef.current) {
             containerRef.current.scrollTo({
@@ -87,20 +83,18 @@ const Chatbox = () => {
                 behavior: 'smooth'
             });
         }
-    }, [messages, loading]);
+    }, [messages, isSendingMessage]);
 
     // Auto-select first chat if none selected
     useEffect(() => {
         if (!selectedChat && chats.length > 0) {
-            // Use the first chat
-            const firstChat = chats[0];
             // Transform for Message component compatibility
             const transformedChat = {
-                ...firstChat,
-                messages: firstChat.messages?.map(msg => ({
+                ...chats[0],
+                messages: chats[0].messages?.map(msg => ({
                     _id: msg._id,
                     content: msg.content,
-                    isUser: msg.role === 'user',
+                    isUser: msg.role === 'user' || msg.isUser,
                     role: msg.role,
                     timestamp: msg.timestamp,
                     isImage: msg.isImage || false
@@ -116,15 +110,13 @@ const Chatbox = () => {
             <div ref={containerRef} className="flex-1 overflow-y-auto px-4 md:px-8 lg:px-12 xl:px-20 2xl:px-40">
                 <div className="min-h-full flex flex-col justify-center">
                     {/* Welcome message - only shows when no messages */}
-                    {messages.length === 0 && !loading && (
+                    {messages.length === 0 && !isSendingMessage && !selectedChat && (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
                                 Welcome to YoumaX
                             </h1>
                             <p className="text-white/60 text-lg md:text-xl max-w-md">
-                                {selectedChat
-                                    ? "Start a conversation with your AI assistant"
-                                    : "Select a chat or create a new one to begin"}
+                                Create a new chat or select one from the sidebar to begin
                             </p>
                         </div>
                     )}
@@ -132,12 +124,15 @@ const Chatbox = () => {
                     {/* Messages */}
                     <div className="space-y-6 py-4">
                         {messages.map((message) => (
-                            <Message key={message._id || message.timestamp} message={message} />
+                            <Message
+                                key={message._id || `${message.role}-${message.timestamp}`}
+                                message={message}
+                            />
                         ))}
 
-                        {/* Loading indicator */}
-                        {loading && (
-                            <div className="flex justify-start">
+                        {/* Loading indicator for AI response */}
+                        {isSendingMessage && messages.length > 0 && (
+                            <div className="flex justify-start message-animate">
                                 <div className="max-w-[80%] rounded-2xl p-4 bg-[#3D0000]/30 border border-[#FF0000]/20">
                                     <div className="flex items-center gap-1.5">
                                         <div className='w-1.5 h-1.5 rounded-full bg-[#FF0000]/30 animate-bounce'></div>
@@ -162,6 +157,7 @@ const Chatbox = () => {
                                 type="button"
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="flex items-center gap-2 bg-[#3D0000] border border-[#FF0000]/30 rounded-lg px-4 py-2.5 text-sm text-white outline-none transition-all duration-200 hover:border-[#FF0000] hover:bg-[#950101]/80 focus:border-[#FF0000] focus:bg-[#950101]/80 min-w-[140px] justify-between"
+                                disabled={isSendingMessage}
                             >
                                 <div className="flex items-center gap-2">
                                     {selectedMode.icon}
@@ -210,16 +206,16 @@ const Chatbox = () => {
                             placeholder="Type your prompt here..."
                             className='flex-1 w-full text-sm outline-none bg-transparent text-white placeholder:text-white/40'
                             required
-                            disabled={loading}
+                            disabled={isSendingMessage}
                         />
 
                         {/* Send Button */}
                         <button
                             type="submit"
-                            disabled={loading || !prompt.trim()}
+                            disabled={isSendingMessage || !prompt.trim()}
                             className="flex items-center justify-center p-3 rounded-full bg-gradient-to-r from-[#950101] to-[#FF0000] hover:from-[#FF0000] hover:to-[#950101] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
                         >
-                            {loading ? (
+                            {isSendingMessage ? (
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 <svg

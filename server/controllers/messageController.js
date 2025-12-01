@@ -41,8 +41,18 @@ export const textMessageController = async (req, res) => {
             isImage: false
         };
 
-        // Add AI reply to chat and save
+        // Add AI reply to chat
         chat.messages.push(reply);
+
+        // Update chat name if it's the first message
+        if (chat.name === "New Chat" && chat.messages.length === 2) {
+            const firstUserMessage = chat.messages.find(m => m.role === 'user');
+            if (firstUserMessage) {
+                chat.name = firstUserMessage.content.substring(0, 50) +
+                    (firstUserMessage.content.length > 50 ? '...' : '');
+            }
+        }
+
         await chat.save();
 
         res.json({ success: true, reply });
@@ -112,7 +122,17 @@ export const imageMessageController = async (req, res) => {
             isImage: true,
         };
 
-        // Add AI reply to chat and save
+        // Add AI reply to chat
+
+        // Update chat name if it's the first message
+        if (chat.name === "New Chat" && chat.messages.length === 2) {
+            const firstUserMessage = chat.messages.find(m => m.role === 'user');
+            if (firstUserMessage) {
+                chat.name = firstUserMessage.content.substring(0, 50) +
+                    (firstUserMessage.content.length > 50 ? '...' : '');
+            }
+        }
+
         chat.messages.push(reply);
         await chat.save();
 
@@ -120,7 +140,7 @@ export const imageMessageController = async (req, res) => {
 
     } catch (error) {
         console.log("Image message error:", error);
-        
+
         // Make sure we haven't already sent a response
         if (!res.headersSent) {
             res.status(500).json({

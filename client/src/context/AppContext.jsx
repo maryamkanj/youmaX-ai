@@ -11,6 +11,7 @@ export const AppContextProvider = ({ children }) => {
     const [selectedChat, setSelectedChat] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isSendingMessage, setIsSendingMessage] = useState(false);
 
     // Axios instance with default config
     const api = axios.create({
@@ -105,6 +106,11 @@ export const AppContextProvider = ({ children }) => {
                     createdAt: chat.createdAt
                 }));
                 setChats(transformedChats);
+
+                // If no chat is selected but we have chats, select the first one
+                if (!selectedChat && transformedChats.length > 0) {
+                    setSelectedChat(transformedChats[0]);
+                }
             }
         } catch (error) {
             console.error("Failed to load chats:", error);
@@ -188,57 +194,92 @@ export const AppContextProvider = ({ children }) => {
         } catch (error) {
             console.error("Error creating chat:", error);
             setError("Failed to create new chat");
+            // Create temporary chat for better UX
+            const tempChat = {
+                _id: `temp-${Date.now()}`,
+                name: 'New Chat',
+                messages: [],
+                updatedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            };
+            setChats(prev => [tempChat, ...prev]);
+            setSelectedChat(tempChat);
+            return tempChat;
         }
     };
 
-    // Add message to current chat
+    // Add message to current chat - FIXED VERSION
     const addMessage = async (content, mode = 'text') => {
-        if (!selectedChat) {
-            // Create chat first if doesn't exist
-            await addNewChat();
-            return;
-        }
-
-        const isImageMode = mode === 'image';
-
-        // Generate temporary IDs for optimistic updates
-        const userTempId = `temp-user-${Date.now()}`;
-        const aiTempId = `temp-ai-${Date.now()}`;
-
-        // Optimistic update for user message
-        const userMessage = {
-            _id: userTempId,
-            content,
-            isUser: true,
-            role: 'user',
-            timestamp: new Date().toISOString(),
-            isImage: false
-        };
-
-        // Update state optimistically
-        setChats(prev =>
-            prev.map(chat =>
-                chat._id === selectedChat._id
-                    ? {
-                        ...chat,
-                        messages: [...chat.messages, userMessage],
-                        updatedAt: new Date().toISOString()
-                    }
-                    : chat
-            )
-        );
+        setIsSendingMessage(true);
+        setError(null);
 
         try {
+            let currentChat = selectedChat;
+
+            // If no chat exists, create one first
+            if (!currentChat) {
+                currentChat = await addNewChat();
+                if (!currentChat) {
+                    setIsSendingMessage(false);
+                    return;
+                }
+            }
+
+            const isImageMode = mode === 'image';
+
+            // Generate unique IDs for optimistic updates
+            const userMessageId = `user-${Date.now()}`;
+            const aiMessageId = `ai-${Date.now()}`;
+            const timestamp = new Date().toISOString();
+
+            // Create user message object
+            const userMessage = {
+                _id: userMessageId,
+                content,
+                isUser: true,
+                role: 'user',
+                timestamp: timestamp,
+                isImage: false
+            };
+
+            // Update chats state immediately with user message
+            setChats(prev =>
+                prev.map(chat =>
+                    chat._id === currentChat._id
+                        ? {
+                            ...chat,
+                            messages: [...chat.messages, userMessage],
+                            updatedAt: timestamp,
+                            // Update chat name to first message content if it's "New Chat"
+                            name: chat.name === 'New Chat' && chat.messages.length === 0
+                                ? content.substring(0, 40) + (content.length > 40 ? '...' : '')
+                                : chat.name
+                        }
+                        : chat
+                )
+            );
+
+            // Update selected chat immediately
+            setSelectedChat(prev => ({
+                ...prev,
+                messages: [...prev.messages, userMessage],
+                updatedAt: timestamp,
+                name: prev.name === 'New Chat' && prev.messages.length === 0
+                    ? content.substring(0, 40) + (content.length > 40 ? '...' : '')
+                    : prev.name
+            }));
+
+            // Send to backend API
             const endpoint = isImageMode ? '/api/message/image' : '/api/message/text';
             const { data } = await api.post(endpoint, {
-                chatId: selectedChat._id,
+                chatId: currentChat._id,
                 prompt: content
             });
 
             if (data.success && data.reply) {
                 // Transform backend reply to frontend format
                 const aiReply = {
-                    _id: data.reply._id || aiTempId,
+                    _id: aiMessageId,
                     content: data.reply.content,
                     isUser: false,
                     role: data.reply.role || 'assistant',
@@ -246,58 +287,37 @@ export const AppContextProvider = ({ children }) => {
                     isImage: data.reply.isImage || false
                 };
 
-                // Update with real AI response, removing temporary user message
+                // Update with AI response
                 setChats(prev =>
                     prev.map(chat =>
-                        chat._id === selectedChat._id
+                        chat._id === currentChat._id
                             ? {
                                 ...chat,
-                                messages: chat.messages
-                                    .filter(msg => msg._id !== userTempId)
-                                    .concat([
-                                        {
-                                            ...userMessage,
-                                            _id: `user-${Date.now()}`
-                                        },
-                                        aiReply
-                                    ]),
+                                messages: [...chat.messages, aiReply],
                                 updatedAt: new Date().toISOString()
                             }
                             : chat
                     )
                 );
 
-                // Update selected chat
+                // Update selected chat with AI response
                 setSelectedChat(prev => ({
                     ...prev,
-                    messages: [
-                        ...prev.messages.filter(msg => msg._id !== userTempId),
-                        {
-                            ...userMessage,
-                            _id: `user-${Date.now()}`
-                        },
-                        aiReply
-                    ]
+                    messages: [...prev.messages, aiReply],
+                    updatedAt: new Date().toISOString()
                 }));
 
-                // Refresh chats list to get updated timestamps
+                // Refresh chats list
                 await loadChats();
             }
         } catch (error) {
             console.error("Message sending failed:", error);
-            setError("Failed to send message");
+            setError("Failed to send message. Please try again.");
 
-            // Remove optimistic update on error
-            setChats(prev =>
-                prev.map(chat =>
-                    chat._id === selectedChat._id
-                        ? {
-                            ...chat,
-                            messages: chat.messages.filter(msg => msg._id !== userTempId)
-                        }
-                        : chat
-                )
-            );
+            // Keep the user message visible, just show an error
+            // You could add an error indicator to the user message
+        } finally {
+            setIsSendingMessage(false);
         }
     };
 
@@ -334,6 +354,7 @@ export const AppContextProvider = ({ children }) => {
         setLoading,
         error,
         setError,
+        isSendingMessage,
         isLoggedIn: !!user
     };
 
