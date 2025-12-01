@@ -1,24 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAppContext } from "../context/AppContext";
-
-const Message = ({ message }) => {
-    return (
-        <div className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl p-4 ${message.isUser
-                ? 'bg-gradient-to-r from-[#950101] to-[#FF0000] text-white'
-                : 'bg-[#3D0000]/30 border border-[#FF0000]/20 text-white'
-                }`}>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <p className={`text-xs mt-2 ${message.isUser ? 'text-white/70' : 'text-white/50'}`}>
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                </p>
-            </div>
-        </div>
-    );
-};
+import Message from "./Message";
 
 const Chatbox = () => {
-    const { selectedChat, addMessage, addNewChat } = useAppContext();
+    const { selectedChat, addMessage, addNewChat, chats } = useAppContext();
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [prompt, setPrompt] = useState('');
@@ -29,23 +14,32 @@ const Chatbox = () => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
-        if (!prompt.trim()) return;
+        if (!prompt.trim() || loading) return;
 
         setLoading(true);
 
-        // Add user message
-        addMessage(prompt, true);
-        setPrompt('');
-
-        // Simulate AI response
-        setTimeout(() => {
+        try {
+            await addMessage(prompt, mode);
+            setPrompt('');
+        } catch (error) {
+            console.error("Failed to send message:", error);
+        } finally {
             setLoading(false);
-        }, 1000);
-    }
+        }
+    };
 
     useEffect(() => {
         if (selectedChat) {
-            setMessages(selectedChat.messages || []);
+            // Transform messages for Message component
+            const transformedMessages = selectedChat.messages?.map(msg => ({
+                _id: msg._id,
+                content: msg.content,
+                isUser: msg.role === 'user',
+                role: msg.role,
+                timestamp: msg.timestamp,
+                isImage: msg.isImage || false
+            })) || [];
+            setMessages(transformedMessages);
         } else {
             setMessages([]);
         }
@@ -95,20 +89,42 @@ const Chatbox = () => {
         }
     }, [messages, loading]);
 
+    // Auto-select first chat if none selected
+    useEffect(() => {
+        if (!selectedChat && chats.length > 0) {
+            // Use the first chat
+            const firstChat = chats[0];
+            // Transform for Message component compatibility
+            const transformedChat = {
+                ...firstChat,
+                messages: firstChat.messages?.map(msg => ({
+                    _id: msg._id,
+                    content: msg.content,
+                    isUser: msg.role === 'user',
+                    role: msg.role,
+                    timestamp: msg.timestamp,
+                    isImage: msg.isImage || false
+                })) || []
+            };
+            setMessages(transformedChat.messages);
+        }
+    }, [chats, selectedChat]);
+
     return (
         <div className='flex-1 flex flex-col h-screen'>
             {/* Chat Messages Area - Takes up all available space */}
             <div ref={containerRef} className="flex-1 overflow-y-auto px-4 md:px-8 lg:px-12 xl:px-20 2xl:px-40">
                 <div className="min-h-full flex flex-col justify-center">
                     {/* Welcome message - only shows when no messages */}
-                    {messages.length === 0 && !selectedChat && (
+                    {messages.length === 0 && !loading && (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-
                             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
                                 Welcome to YoumaX
                             </h1>
                             <p className="text-white/60 text-lg md:text-xl max-w-md">
-                                Start a conversation with your AI assistant
+                                {selectedChat
+                                    ? "Start a conversation with your AI assistant"
+                                    : "Select a chat or create a new one to begin"}
                             </p>
                         </div>
                     )}
@@ -116,7 +132,7 @@ const Chatbox = () => {
                     {/* Messages */}
                     <div className="space-y-6 py-4">
                         {messages.map((message) => (
-                            <Message key={message._id} message={message} />
+                            <Message key={message._id || message.timestamp} message={message} />
                         ))}
 
                         {/* Loading indicator */}

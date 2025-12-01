@@ -37,17 +37,29 @@ const Sidebar = () => {
 
     // Function to handle chat selection
     const handleChatSelect = (chat) => {
-        setSelectedChat(chat);
+        // Transform chat for Message component compatibility
+        const transformedChat = {
+            ...chat,
+            messages: chat.messages?.map(msg => ({
+                _id: msg._id,
+                content: msg.content,
+                isUser: msg.role === 'user',
+                role: msg.role,
+                timestamp: msg.timestamp,
+                isImage: msg.isImage || false
+            })) || []
+        };
+        setSelectedChat(transformedChat);
         if (window.innerWidth < 768) {
             setIsMobileMenuOpen(false);
         }
     };
 
     // Function to handle new chat creation
-    const handleNewChat = () => {
-        addNewChat();
-        if (window.innerWidth < 768) {
-            setIsMobileMenuOpen(false);
+    const handleNewChat = async () => {
+        const newChat = await addNewChat();
+        if (newChat) {
+            handleChatSelect(newChat);
         }
     };
 
@@ -134,8 +146,8 @@ const Sidebar = () => {
                 <div className='flex-1 overflow-y-auto mt-3 text-sm space-y-2 pr-1'>
                     {chats
                         .filter((chat) =>
-                            chat.messages[0]
-                                ? chat.messages[0]?.content.toLowerCase().includes(search.toLowerCase())
+                            chat.messages?.[0]
+                                ? chat.messages[0]?.content?.toLowerCase().includes(search.toLowerCase())
                                 : chat.name.toLowerCase().includes(search.toLowerCase())
                         )
                         .map((chat) => (
@@ -150,7 +162,7 @@ const Sidebar = () => {
                                 {/* Chat content - takes most of the space, responsive truncation */}
                                 <div className='flex-1 min-w-0 overflow-hidden'>
                                     <p className='truncate text-white font-medium text-sm md:text-base'>
-                                        {chat.messages.length > 0
+                                        {chat.messages?.length > 0 && chat.messages[0]?.content
                                             ? chat.messages[0].content.slice(0, 40) + (chat.messages[0].content.length > 40 ? '...' : '')
                                             : chat.name}
                                     </p>
