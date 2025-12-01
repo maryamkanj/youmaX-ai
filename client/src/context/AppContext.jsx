@@ -7,7 +7,6 @@ const AppContext = createContext();
 export const AppContextProvider = ({ children }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
-    const [isGuest, setIsGuest] = useState(false);
     const [chats, setChats] = useState([]);
     const [selectedChat, setSelectedChat] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -27,7 +26,6 @@ export const AppContextProvider = ({ children }) => {
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                const guestStatus = localStorage.getItem('isGuest');
 
                 if (token) {
                     // Verify token and get user data
@@ -37,15 +35,20 @@ export const AppContextProvider = ({ children }) => {
 
                     if (data.success) {
                         setUser(data.user);
-                        setIsGuest(false);
+                    } else {
+                        localStorage.removeItem('token');
+                        setUser(null);
+                        navigate('/login');
                     }
-                } else if (guestStatus === 'true') {
-                    setIsGuest(true);
+                } else {
+                    setUser(null);
+                    navigate('/login');
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
                 localStorage.removeItem('token');
                 setUser(null);
+                navigate('/login');
             } finally {
                 setLoading(false);
             }
@@ -54,7 +57,7 @@ export const AppContextProvider = ({ children }) => {
         checkAuthState();
     }, []);
 
-    // Load chats based on user/guest status
+    // Load chats based on user status
     useEffect(() => {
         const loadChats = async () => {
             if (user) {
@@ -69,33 +72,13 @@ export const AppContextProvider = ({ children }) => {
                 } catch (error) {
                     console.error("Failed to load chats:", error);
                 }
-            } else if (isGuest) {
-                const guestChats = localStorage.getItem('guest_chats');
-                setChats(guestChats ? JSON.parse(guestChats) : []);
             } else {
                 setChats([]);
                 setSelectedChat(null);
             }
         };
         loadChats();
-    }, [user, isGuest]);
-
-    // Save guest chats to local storage
-    useEffect(() => {
-        if (isGuest && chats.length > 0) {
-            localStorage.setItem('guest_chats', JSON.stringify(chats));
-        }
-    }, [chats, isGuest]);
-
-    // Guest login function
-    const loginAsGuest = () => {
-        setLoading(true);
-        setIsGuest(true);
-        localStorage.setItem('isGuest', 'true');
-        setChats([]);
-        setLoading(false);
-        navigate('/');
-    };
+    }, [user]);
 
     // User login function
     const loginUser = async (userData) => {
@@ -106,14 +89,12 @@ export const AppContextProvider = ({ children }) => {
             if (data.success) {
                 localStorage.setItem('token', data.token);
                 setUser(data.user);
-                setIsGuest(false);
-                localStorage.removeItem('isGuest');
-
                 navigate('/');
+                return { success: true };
             }
         } catch (error) {
             console.error('Login error:', error);
-            throw error; // Propagate error to component for handling
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -128,9 +109,8 @@ export const AppContextProvider = ({ children }) => {
             if (data.success) {
                 localStorage.setItem('token', data.token);
                 setUser(data.user);
-                setIsGuest(false);
-                localStorage.removeItem('isGuest');
                 navigate('/');
+                return { success: true };
             }
         } catch (error) {
             console.error('Registration error:', error);
@@ -143,15 +123,8 @@ export const AppContextProvider = ({ children }) => {
     // Logout function
     const logout = () => {
         setLoading(true);
-        if (isGuest) {
-            localStorage.removeItem('guest_chats');
-            localStorage.removeItem('isGuest');
-        } else {
-            localStorage.removeItem('token');
-        }
-
+        localStorage.removeItem('token');
         setUser(null);
-        setIsGuest(false);
         setChats([]);
         setSelectedChat(null);
         setLoading(false);
@@ -160,28 +133,12 @@ export const AppContextProvider = ({ children }) => {
 
     // Add new chat
     const addNewChat = async () => {
-        if (isGuest) {
-            const newChat = {
-                _id: Date.now().toString(),
-                name: 'New Chat',
-                messages: [],
-                updatedAt: new Date().toISOString(),
-                createdAt: new Date().toISOString()
-            };
-            setChats(prev => [newChat, ...prev]);
-            setSelectedChat(newChat);
-            return newChat;
-        }
-
         try {
             const token = localStorage.getItem('token');
             const { data } = await api.post('/api/chat/create', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (data.success) {
-                // The server returns chatId, we need to fetch or construct the chat object
-                // For now, let's assume we reload chats or construct a basic one
-                // Ideally, server should return the full chat object
                 const newChat = {
                     _id: data.chatId,
                     name: 'New Chat',
@@ -200,47 +157,10 @@ export const AppContextProvider = ({ children }) => {
 
     // Add message to current chat
     const addMessage = async (content, isUser = true) => {
-        if (isGuest) {
-            // Guest logic (mock AI)
-            if (!selectedChat) {
-                const newChat = await addNewChat();
-                setSelectedChat(newChat);
-            }
-
-            const newMessage = {
-                _id: Date.now().toString(),
-                content,
-                isUser,
-                timestamp: new Date().toISOString()
-            };
-
-            setChats(prev =>
-                prev.map(chat =>
-                    chat._id === selectedChat._id
-                        ? {
-                            ...chat,
-                            messages: [...chat.messages, newMessage],
-                            updatedAt: new Date().toISOString(),
-                            name: chat.messages.length === 0 ? content.substring(0, 30) + '...' : chat.name
-                        }
-                        : chat
-                )
-            );
-
-            if (isUser) {
-                setTimeout(() => {
-                    addMessage("I'm YoumaX, your AI assistant. How can I help you today?", false);
-                }, 1000);
-            }
-            return;
-        }
-
         // Real API logic
         if (!selectedChat) {
             // Create chat first if doesn't exist
             await addNewChat();
-            // Note: selectedChat state update might not be immediate, so this logic is a bit flaky without refactoring
-            // For now, let's assume the user selects a chat or we handle it better in UI
         }
 
         // Optimistic update for user message
@@ -277,7 +197,7 @@ export const AppContextProvider = ({ children }) => {
                 if (data.success) {
                     // Add AI reply
                     const aiReply = {
-                        _id: Date.now().toString(), // Server doesn't return ID for message in reply object usually, check controller
+                        _id: Date.now().toString(),
                         content: data.reply.content,
                         isUser: false,
                         timestamp: data.reply.timestamp
@@ -304,19 +224,11 @@ export const AppContextProvider = ({ children }) => {
 
     // Delete chat
     const deleteChat = async (chatId) => {
-        if (isGuest) {
-            setChats(prev => prev.filter(chat => chat._id !== chatId));
-            if (selectedChat && selectedChat._id === chatId) {
-                setSelectedChat(null);
-            }
-            return;
-        }
-
         try {
             const token = localStorage.getItem('token');
             await api.delete('/api/chat/delete', {
                 headers: { Authorization: `Bearer ${token}` },
-                data: { chatId } // DELETE requests with body need 'data' property in axios
+                data: { chatId }
             });
 
             setChats(prev => prev.filter(chat => chat._id !== chatId));
@@ -332,8 +244,6 @@ export const AppContextProvider = ({ children }) => {
         navigate,
         user,
         setUser,
-        isGuest,
-        loginAsGuest,
         loginUser,
         registerUser,
         logout,
@@ -346,8 +256,7 @@ export const AppContextProvider = ({ children }) => {
         deleteChat,
         loading,
         setLoading,
-        isLoggedIn: !!user,
-        isTemporaryUser: isGuest && !user
+        isLoggedIn: !!user
     };
 
     return (

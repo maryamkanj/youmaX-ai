@@ -3,7 +3,7 @@ import { useAppContext } from "../context/AppContext";
 
 const Login = () => {
     const [state, setState] = useState("login")
-    const { loginAsGuest, loginUser, registerUser, loading } = useAppContext()
+    const { loginUser, registerUser, loading } = useAppContext()
     const [showPassword, setShowPassword] = useState(false)
 
     const [formData, setFormData] = useState({
@@ -55,26 +55,6 @@ const Login = () => {
                     <p className="text-white/60 text-xs md:text-sm">
                         Your AI Assistant
                     </p>
-                </div>
-
-                {/* Guest Access Button */}
-                <div className="mb-4">
-                    <button
-                        onClick={loginAsGuest}
-                        disabled={loading}
-                        className="w-full h-11 rounded-full text-white bg-gradient-to-r from-[#1a1a1a] to-[#2d2d2d] hover:from-[#2d2d2d] hover:to-[#1a1a1a] border border-[#FF0000]/30 transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-105 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? "Loading..." : "Try as Guest"}
-                    </button>
-                    <p className="text-white/40 text-xs text-center mt-2">
-                        Chats will disappear when you logout
-                    </p>
-                </div>
-
-                <div className="relative flex items-center justify-center mb-4">
-                    <div className="border-t border-[#FF0000]/30 flex-grow"></div>
-                    <span className="mx-3 text-white/40 text-xs">or</span>
-                    <div className="border-t border-[#FF0000]/30 flex-grow"></div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,20 +168,6 @@ const Login = () => {
                         </button>
                     </p>
                 </form>
-
-                {/* Guest warning */}
-                <div className="mt-4 p-3 bg-[#FF0000]/10 border border-[#FF0000]/20 rounded-lg">
-                    <p className="text-white/60 text-xs text-center">
-                        <strong>Guest Mode:</strong> Your conversations are temporary and will be lost when you logout.
-                        <button
-                            onClick={() => setState("register")}
-                            className="text-[#FF0000] hover:text-white ml-1 font-medium"
-                            disabled={loading}
-                        >
-                            Sign up
-                        </button> to save your chats permanently.
-                    </p>
-                </div>
             </div>
         </div>
     )

@@ -4,14 +4,14 @@ import { useAppContext } from "../context/AppContext";
 
 const Loading = () => {
     const navigate = useNavigate();
-    const { user, isGuest } = useAppContext();
+    const { user } = useAppContext();
 
     useEffect(() => {
         // Shorter timeout for better UX
         const timeout = setTimeout(() => {
-            // Redirect to chat interface whether user is logged in or guest
+            // Redirect to chat interface
             navigate('/');
-        }, 3000); // Reduced from 8s to 3s for better UX
+        }, 3000);
 
         return () => clearTimeout(timeout);
     }, [navigate]);
@@ -22,11 +22,6 @@ const Loading = () => {
             return {
                 welcome: `Welcome back, ${user.name || user.email.split('@')[0]}!`,
                 status: "Loading your conversations..."
-            };
-        } else if (isGuest) {
-            return {
-                welcome: "Welcome to YoumaX!",
-                status: "Setting up guest session..."
             };
         } else {
             return {
@@ -45,13 +40,11 @@ const Loading = () => {
                 <div className="mb-6">
                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${user
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                        : isGuest
-                            ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                        : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                         }`}>
-                        <div className={`w-2 h-2 rounded-full ${user ? 'bg-green-400' : isGuest ? 'bg-yellow-400' : 'bg-blue-400'
+                        <div className={`w-2 h-2 rounded-full ${user ? 'bg-green-400' : 'bg-blue-400'
                             }`}></div>
-                        {user ? 'Logged In' : isGuest ? 'Guest Mode' : 'Loading...'}
+                        {user ? 'Logged In' : 'Loading...'}
                     </div>
                 </div>
 
@@ -95,11 +88,6 @@ const Loading = () => {
                     <p className="opacity-0 animate-loading-fade-in" style={{ animationDelay: '1.4s', animationFillMode: 'forwards' }}>
                         💬 Preparing chat interface...
                     </p>
-                    {isGuest && (
-                        <p className="opacity-0 animate-loading-fade-in text-yellow-400/80" style={{ animationDelay: '2.0s', animationFillMode: 'forwards' }}>
-                            ⚡ Guest session - chats are temporary
-                        </p>
-                    )}
                     {user && (
                         <p className="opacity-0 animate-loading-fade-in text-green-400/80" style={{ animationDelay: '2.0s', animationFillMode: 'forwards' }}>
                             ✅ Loading your saved conversations...

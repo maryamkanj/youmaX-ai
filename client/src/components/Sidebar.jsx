@@ -4,14 +4,13 @@ import { useNavigate } from "react-router-dom";
 import moment from "moment";
 
 const Sidebar = () => {
-    const { chats, setSelectedChat, selectedChat, user, logout, addNewChat, deleteChat, isGuest } = useAppContext();
+    const { chats, setSelectedChat, selectedChat, user, logout, addNewChat, deleteChat } = useAppContext();
     const [search, setSearch] = useState('');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navigate = useNavigate();
 
     // Function to get user initials for profile icon
     const getUserInitials = () => {
-        if (isGuest) return "G";
         if (!user?.name) return "U";
         return user.name
             .split(' ')
@@ -47,14 +46,6 @@ const Sidebar = () => {
     // Function to handle new chat creation
     const handleNewChat = () => {
         addNewChat();
-        if (window.innerWidth < 768) {
-            setIsMobileMenuOpen(false);
-        }
-    };
-
-    // Function to handle navigation
-    const handleNavigation = (path) => {
-        navigate(path);
         if (window.innerWidth < 768) {
             setIsMobileMenuOpen(false);
         }
@@ -209,46 +200,24 @@ const Sidebar = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-white truncate">
-                                    {isGuest ? 'Guest User' : user ? user.name : 'User'}
+                                    {user ? user.name : 'User'}
                                 </p>
                                 <p className="text-xs text-white/60 truncate">
-                                    {isGuest ? 'Temporary Session' : user ? user.email : 'Login to your account'}
+                                    {user ? user.email : 'Login to your account'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Show appropriate button based on user state */}
-                        {user ? (
-                            <button
-                                onClick={() => handleItemClick(handleLogout)}
-                                className="w-full flex items-center justify-center gap-2 p-2 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-200 text-sm font-medium"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                                Logout
-                            </button>
-                        ) : isGuest ? (
-                            <button
-                                onClick={() => handleNavigation('/login')}
-                                className="w-full flex items-center justify-center gap-2 p-2 rounded-md bg-[#FF0000]/10 border border-[#FF0000]/30 text-[#FF0000] hover:bg-[#FF0000]/20 hover:text-white transition-all duration-200 text-sm font-medium"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                                </svg>
-                                Login to Save Chats
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => handleNavigation('/login')}
-                                className="w-full flex items-center justify-center gap-2 p-2 rounded-md bg-[#FF0000]/10 border border-[#FF0000]/30 text-[#FF0000] hover:bg-[#FF0000]/20 hover:text-white transition-all duration-200 text-sm font-medium"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                                </svg>
-                                Login
-                            </button>
-                        )}
+                        {/* Logout button */}
+                        <button
+                            onClick={() => handleItemClick(handleLogout)}
+                            className="w-full flex items-center justify-center gap-2 p-2 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-200 text-sm font-medium"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Logout
+                        </button>
                     </div>
                 </div>
             </div>
